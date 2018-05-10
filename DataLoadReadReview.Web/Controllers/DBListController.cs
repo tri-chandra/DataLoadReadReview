@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DataLoadReadReview.Library;
 using DataLoadReadReview.Web.Configs;
+using DataLoadReadReview.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -18,47 +19,72 @@ namespace DataLoadReadReview.Web.Controllers
         }
 
         [HttpGet("[action]/{dbName}")]
-        public IEnumerable<string> DbList(string dbName)
+        public DBListResult DbList(string dbName)
         {
-            string connString = dbConnConfig.ConnectionString;
-
-            List<string> retVal = new List<string>();
-            using (var db = new DataContext(connString))
+            try
             {
-                using (var reader = db.ListTables(dbName))
+                string connString = dbConnConfig.ConnectionString;
+
+                List<string> retVal = new List<string>();
+                using (var db = new DataContext(connString))
                 {
-                    while (reader.Read())
+                    using (var reader = db.ListTables(dbName))
                     {
-                        retVal.Add(reader.GetString(0));
+                        while (reader.Read())
+                        {
+                            retVal.Add(reader.GetString(0));
+                        }
                     }
                 }
+
+                return new DBListResult()
+                {
+                    Payload = retVal
+                };
             }
-            
-            return retVal;
+            catch (Exception e)
+            {
+                return new DBListResult()
+                {
+                    Error = e.Message
+                };
+            }
         }
 
         [HttpGet("[action]")]
-        public IEnumerable<string> SchemaList()
+        public DBListResult SchemaList()
         {
-            string connString = dbConnConfig.ConnectionString;
+            try { 
+                string connString = dbConnConfig.ConnectionString;
 
-            List<string> retVal = new List<string>();
-            using (var db = new DataContext(connString))
-            {
-                using (var reader = db.ListSchema())
+                List<string> retVal = new List<string>();
+                using (var db = new DataContext(connString))
                 {
-                    while (reader.Read())
+                    using (var reader = db.ListSchema())
                     {
-                        retVal.Add(reader.GetString(0));
+                        while (reader.Read())
+                        {
+                            retVal.Add(reader.GetString(0));
+                        }
                     }
                 }
-            }
 
-            return retVal;
+                return new DBListResult()
+                {
+                    Payload = retVal
+                };
+            }
+            catch (Exception e)
+            {
+                return new DBListResult()
+                {
+                    Error = e.Message
+                };
+            }
         }
 
         [HttpGet("[action]/{dbName}/{tableName}")]
-        public Google.Apis.Storage.v1.Data.Object UploadToGCS(string dbName, string tableName)
+        public UploadResult UploadToGCS(string dbName, string tableName)
         {
             string connString = dbConnConfig.ConnectionString;
 
@@ -70,13 +96,19 @@ namespace DataLoadReadReview.Web.Controllers
                     {
                         string filename = string.Format("{0}.{1}_{2:yyyy-MM-dd}.tsv", dbName, tableName, DateTime.Now);
                         DBWriter.WriteToFile(reader, filename);
-                        return DBWriter.WriteToGCS(filename);
+                        return new UploadResult()
+                        {
+                            Payload = DBWriter.WriteToGCS(filename)
+                        };
                     }
                 }
             }
             catch (Exception e)
             {
-                throw e;
+                return new UploadResult()
+                {
+                    Error = e.Message
+                };
             }
         }
     }

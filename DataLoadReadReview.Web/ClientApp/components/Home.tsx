@@ -12,9 +12,13 @@ export class Home extends React.Component<RouteComponentProps<{}>, HomeState> {
         this.state = { schemaList: [], loading: true };
 
         fetch('api/DBList/SchemaList')
-            .then(response => response.json() as Promise<string[]>)
+            .then(response => response.json() as Promise<any>)
             .then(data => {
-                this.setState({ schemaList: data, loading: false });
+                if (data.error) {
+                    console.log(data.error);
+                } else {
+                    this.setState({ schemaList: data.payload, loading: false });
+                }
             });
     }
 
