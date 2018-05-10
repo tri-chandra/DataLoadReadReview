@@ -7,19 +7,20 @@ interface DBListState {
     loading: boolean;
     schema: string;
     uploadProgress: {};
+    errorMessage: string
 }
 
 export class DBList extends React.Component<RouteComponentProps<{}>, DBListState> {
     constructor(props: any) {
         super();
         this.state = {
-            dbList: [], schema: props.match.params.dbName, loading: true, uploadProgress: {} };
+            dbList: [], schema: props.match.params.dbName, loading: true, uploadProgress: {}, errorMessage: '' };
 
         fetch(`api/DBList/DbList/${props.match.params.dbName}`)
             .then(response => response.json() as Promise<any>)
             .then(data => {
                 if (data.error) {
-                    console.log(data.error);
+                    this.setState({ errorMessage: data.error });
                 } else {
                     this.setState({ dbList: data.payload, loading: false });
                 }
@@ -42,6 +43,9 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
 
         return <div>
             <h1>Table List:</h1>
+            {this.state.errorMessage &&
+                <div className="alert alert-danger" role="alert">{this.state.errorMessage}</div>
+            }
             {contents}
         </div>;
     }
