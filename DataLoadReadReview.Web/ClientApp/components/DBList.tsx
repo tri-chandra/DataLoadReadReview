@@ -2,13 +2,13 @@
 import { RouteComponentProps } from 'react-router';
 import 'isomorphic-fetch';
 
-interface FetchDataExampleState {
+interface DBListState {
     dbList: string[];
     loading: boolean;
     schema: string;
 }
 
-export class DBList extends React.Component<RouteComponentProps<{}>, FetchDataExampleState> {
+export class DBList extends React.Component<RouteComponentProps<{}>, DBListState> {
     constructor(props: any) {
         super();
         this.state = { dbList: [], schema: props.match.params.dbName, loading: true };
@@ -23,7 +23,7 @@ export class DBList extends React.Component<RouteComponentProps<{}>, FetchDataEx
     public render() {
         let contents = this.state.loading
             ? <p><em>Loading...</em></p>
-            : DBList.renderDbTable(this.state.dbList, this.state.schema);
+            : DBList.RenderDbTable(this.state.dbList, this.state.schema);
 
         return <div>
             <h1>Table List:</h1>
@@ -61,7 +61,7 @@ export class DBList extends React.Component<RouteComponentProps<{}>, FetchDataEx
         return <p>No tables found!</p>;
     }
 
-    private static renderDbTable(tables: string[], db: string) {
+    private static RenderDbTable(tables: string[], db: string) {
         if (tables.length > 0)
             return <DBList.RenderTableList tables={tables} db={db} />;
         else

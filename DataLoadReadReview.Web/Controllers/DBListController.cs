@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using DataLoadReadReview.Library;
 using DataLoadReadReview.Web.Configs;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -38,6 +34,26 @@ namespace DataLoadReadReview.Web.Controllers
                 }
             }
             
+            return retVal;
+        }
+
+        [HttpGet("[action]")]
+        public IEnumerable<string> SchemaList()
+        {
+            string connString = dbConnConfig.ConnectionString;
+
+            List<string> retVal = new List<string>();
+            using (var db = new DataContext(connString))
+            {
+                using (var reader = db.ListSchema())
+                {
+                    while (reader.Read())
+                    {
+                        retVal.Add(reader.GetString(0));
+                    }
+                }
+            }
+
             return retVal;
         }
 
