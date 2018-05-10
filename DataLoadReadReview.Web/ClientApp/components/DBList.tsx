@@ -7,6 +7,7 @@ interface DBListState {
     loading: boolean;
     schema: string;
     uploadProgress: {};
+    metadata: {};
     errorMessage: string
 }
 
@@ -14,7 +15,7 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
     constructor(props: any) {
         super();
         this.state = {
-            dbList: [], schema: props.match.params.dbName, loading: true, uploadProgress: {}, errorMessage: '' };
+            dbList: [], schema: props.match.params.dbName, loading: true, uploadProgress: {}, metadata: {}, errorMessage: '' };
 
         fetch(`api/DBList/DbList/${props.match.params.dbName}`)
             .then(response => response.json() as Promise<any>)
@@ -36,10 +37,25 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
         });
     }
 
+    updateMeta(tableName: string, value: string[]) {
+        this.setState({
+            metadata: {
+                ...this.state.metadata,
+                [tableName]: value
+            }
+        });
+    }
+
     public render() {
         let contents = this.state.loading
             ? <p><em>Loading...</em></p>
-            : DBList.RenderDbTable(this.state.dbList, this.state.schema, this.state.uploadProgress, this.updateProgress.bind(this));
+            : DBList.RenderDbTable(
+                this.state.dbList,
+                this.state.schema,
+                this.state.uploadProgress,
+                this.state.metadata,
+                this.updateProgress.bind(this),
+                this.updateMeta.bind(this));
 
         return <div>
             <h1>Table List:</h1>
@@ -60,7 +76,18 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
                 } else {
                     cb(tableName, `Done. Link: (${data.payload.selfLink})`);
                 }
+            });
+    }
 
+    public static onGetMetaClicked(dbName: string, tableName: string, cb: any) {
+        fetch(`api/DBList/GetMeta/${dbName}/${tableName}`)
+            .then(response => response.json() as Promise<any>)
+            .then(data => {
+                if (data.error) {
+
+                } else {
+                    cb(tableName, data.payload.map((value: any) => { return value.selfLink; }));
+                }
             });
     }
 
@@ -81,9 +108,19 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
                         <b className="list-group-item-heading">{table}</b>
                         <div className="list-group-item-text" style={secondRowStyle}>
                             <button
-                                onClick={DBList.onUploadClicked.bind(this, props.db, table, props.cb)}
+                            onClick={DBList.onUploadClicked.bind(this, props.db, table, props.progressCb)}
                                 className="btn btn-default">Upload</button>
-                        <span style={resultStyle}>{props.uploadProgress[table]}</span>
+                            <button
+                                onClick={DBList.onGetMetaClicked.bind(this, props.db, table, props.metaCb)}
+                                className="btn btn-default">Get Metadata</button>
+                            <span style={resultStyle}>{props.uploadProgress[table]}</span>
+
+                        {props.metadata[table] &&
+                            props.metadata[table].map((link: string) => {
+                            return <p key={link} >{link}</p>
+                            })
+                        }
+
                         </div>
                     </div>
                 }
@@ -95,9 +132,16 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
         return <p>No tables found!</p>;
     }
 
-    private static RenderDbTable(tables: string[], db: string, uploadProgress: any, cb: any) {
+    private static RenderDbTable(tables: string[], db: string, uploadProgress: any, metadata: any, progressCb: any, metaCb: any) {
         if (tables.length > 0)
-            return <DBList.RenderTableList tables={tables} db={db} uploadProgress={uploadProgress} cb={cb} />;
+            return <DBList.RenderTableList
+                tables={tables}
+                db={db}
+                uploadProgress={uploadProgress}
+                metadata={metadata}
+                progressCb={progressCb}
+                metaCb={metaCb}
+            />;
         else
             return <DBList.RenderEmptyTableList />
     }

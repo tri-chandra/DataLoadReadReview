@@ -111,5 +111,26 @@ namespace DataLoadReadReview.Web.Controllers
                 };
             }
         }
+
+        [HttpGet("[action]/{dbName}/{tableName}")]
+        public ObjectListResult GetMeta(string dbName, string tableName)
+        {
+            try
+            {
+                return new ObjectListResult()
+                {
+                    Payload = new GCSClient().GetMeta(
+                        string.Format("{0}.{1}", dbName, tableName)
+                    )
+                };
+            }
+            catch (Exception e)
+            {
+                return new ObjectListResult()
+                {
+                    Error = e.Message
+                };
+            }
+        }
     }
 }
