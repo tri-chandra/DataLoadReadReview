@@ -228,6 +228,7 @@ UpgradeLog*.htm
 *.mdf
 *.ldf
 *.ndf
+*.tsv
 
 # Business Intelligence projects
 *.rdl.data
