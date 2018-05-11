@@ -18,6 +18,74 @@ namespace DataLoadReadReview.Library
         }
         private static NpgsqlConnection Connection;
 
+        public async static void StreamSqlToGCS(NpgsqlDataReader reader, StorageClient storageClient, string filename, string bucketName)
+        {
+            MemoryStream ms = new MemoryStream();
+
+            new Thread(() => {
+                var columns = reader.GetColumnSchema();
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    if (i == 0)
+                    {
+                        Console.Write(columns[i].ColumnName);
+                        WriteStringToStream(ms, columns[i].ColumnName);
+                    }
+                    else
+                    {
+                        Console.Write("\t{0}", columns[i].ColumnName);
+                        WriteStringToStream(ms, string.Format("\t{0}", columns[i].ColumnName));
+                    }
+
+                }
+                Console.WriteLine();
+                WriteStringToStream(ms, "\n");
+
+                while (reader.Read())
+                {
+                    for (int i = 0; i < columns.Count; i++)
+                    {
+                        Type type = reader.GetFieldType(i);
+                        var method = reader.GetType().GetMethod("GetFieldValue", new Type[] { typeof(int) });
+                        var genericMethod = method.MakeGenericMethod(type);
+                        var value = genericMethod.Invoke(reader, new object[] { i });
+
+                        string valueHolder = "NULL";
+                        if (value != null) valueHolder = value.ToString();
+                        if (i == 0)
+                        {
+                            Console.Write(valueHolder);
+                            WriteStringToStream(ms, valueHolder);
+                        }
+                        else
+                        {
+                            Console.Write("\t{0}", valueHolder);
+                            WriteStringToStream(ms, string.Format("\t{0}", valueHolder));
+                        }
+                    }
+                    Console.WriteLine();
+                    WriteStringToStream(ms, "\n");
+                    //Thread.Sleep(200);
+                }
+            }).Start();
+            
+            await storageClient.UploadObjectAsync(
+                bucketName,
+                filename,
+                "text/html",
+                ms
+            );
+
+            //Thread.Sleep(5000);
+
+            using (var outputFile = File.OpenWrite("temp-output.tsv"))
+            {
+                storageClient.DownloadObject(bucketName, filename, outputFile);
+            }
+
+            Console.WriteLine("Done??");
+        }
+
         public async static void StreamToGCS()
         {
             //Task.Run(async () => { await test(); }).GetAwaiter().GetResult();
