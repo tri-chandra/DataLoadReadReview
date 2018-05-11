@@ -86,7 +86,13 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
                 if (data.error) {
 
                 } else {
-                    cb(tableName, data.payload.map((value: any) => { return value.selfLink; }));
+                    cb(tableName, data.payload.map((value: any) => {
+                        return {
+                            link: value.selfLink,
+                            size: value.size,
+                            lastModified: value.updated
+                        };
+                    }));
                 }
             });
     }
@@ -97,6 +103,9 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
         }
         const resultStyle = {
             marginLeft: '20px'
+        }
+        const glyphStyle = {
+            marginRight: '10px'
         }
 
         return <div className="list-group">
@@ -116,9 +125,21 @@ export class DBList extends React.Component<RouteComponentProps<{}>, DBListState
                             <span style={resultStyle}>{props.uploadProgress[table]}</span>
 
                         {props.metadata[table] &&
-                            props.metadata[table].map((link: string) => {
-                            return <p key={link} >{link}</p>
+                            (props.metadata[table].length > 0
+                            ? props.metadata[table].map((item: any) => {
+                                return <p key={item.link} style={{ marginTop: '20px' }} >
+                                    <span className="glyphicon glyphicon-file" style={glyphStyle}></span>
+                                    {item.link}
+                                    <br />
+                                    <span className="glyphicon glyphicon-time" style={glyphStyle}></span>
+                                    { Math.round(100*item.size/1024)/100 } KB
+                                    <br />
+                                    <span className="glyphicon glyphicon-hdd" style={glyphStyle}></span>
+                                    {new Date(item.lastModified.toString()).toLocaleString()}
+                                    <div style={{ borderBottom: 'solid', borderWidth: 'thin' }}></div>
+                                </p>
                             })
+                            : (() => { return <p>No file exists!</p> })())
                         }
 
                         </div>
