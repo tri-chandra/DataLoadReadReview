@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using DataLoadReadReview.Library;
 using DataLoadReadReview.Web.Configs;
 using DataLoadReadReview.Web.Models;
@@ -118,11 +119,16 @@ namespace DataLoadReadReview.Web.Controllers
         {
             try
             {
+                int dateLength = 15;
+                string filename = string.Format("{0}.{1}", dbName, tableName);
                 return new ObjectListResult()
                 {
                     Payload = new GCSClient().GetMeta(
                         string.Format("{0}.{1}", dbName, tableName)
-                    )
+                    ).Where(
+                        item => 
+                            item.SelfLink.Substring(item.SelfLink.Length-dateLength-filename.Length).Substring(0, filename.Length) == filename
+                        )
                 };
             }
             catch (Exception e)
