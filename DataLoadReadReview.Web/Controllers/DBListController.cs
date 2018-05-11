@@ -127,7 +127,7 @@ namespace DataLoadReadReview.Web.Controllers
                         string.Format("{0}.{1}", dbName, tableName)
                     ).Where(
                         item => 
-                            item.SelfLink.Substring(item.SelfLink.Length-dateLength-filename.Length).Substring(0, filename.Length) == filename
+                            item.SelfLink.Substring(item.SelfLink.Length-dateLength-filename.Length, filename.Length) == filename
                         )
                 };
             }
