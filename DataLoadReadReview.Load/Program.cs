@@ -7,9 +7,9 @@ using Newtonsoft.Json.Linq;
 namespace DataLoadReadReview.Load
 {
     class Program
-	{
+    {
         static void Main(string[] args)
-		{
+        {
             if (args.Length > 0)
             {
                 string connectionString = "";
@@ -22,8 +22,17 @@ namespace DataLoadReadReview.Load
                 }
 
                 string[] arguments = args[0].Split('.');
-                string dbName = arguments[0];
-                string tableName = arguments[1];
+                string dbName = "public";
+                string tableName = "";
+                if (arguments.Length < 2)
+                {
+                    tableName = arguments[0];
+                }
+                else
+                {
+                    dbName = arguments[0];
+                    tableName = arguments[1];
+                }
 
                 try
                 {
@@ -31,8 +40,10 @@ namespace DataLoadReadReview.Load
                     {
                         using (var reader = db.ReadTable(dbName, tableName))
                         {
-                            string filename = string.Format("{0}_{1:yyyy-MM-dd}.tsv", args[0], DateTime.Now);
+                            string filename = string.Format("{0}.{1}_{2:yyyy-MM-dd}.tsv", dbName, tableName, DateTime.Now);
+                            Console.WriteLine("Reading DB...");
                             DBWriter.WriteToFile(reader, filename);
+                            Console.WriteLine("Uploading TSV...");
                             DBWriter.WriteToGCS(filename);
                         }
                     }
@@ -44,11 +55,14 @@ namespace DataLoadReadReview.Load
             }
             else
             {
-                //TODO: print out error message and instructions
+                Console.WriteLine(
+@"Run the following command:
+  dotnet run {schema}.{table}
+");
             }
 
             Console.WriteLine("Woot, all done!");
             Console.ReadLine();
         }
-	}
+    }
 }

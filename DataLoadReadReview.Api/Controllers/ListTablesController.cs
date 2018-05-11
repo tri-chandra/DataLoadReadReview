@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using DataLoadReadReview.Api.Configs;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using DataLoadReadReview.Library;
 using Microsoft.Extensions.Options;
+using System;
+using DataLoadReadReview.Api.Models;
 
 namespace DataLoadReadReview.Api.Controllers
 {
@@ -24,23 +22,36 @@ namespace DataLoadReadReview.Api.Controllers
         // GET: api/ListTables/dbName
         [HttpGet("{dbName}")]
         [Route("/api/list-tables/{dbName}")]
-        public IEnumerable<string> Get(string dbName)
+        public ListTablesResult Get(string dbName)
         {
-            string connString = dbConnConfig.ConnectionString;
-
-            List<string> retVal = new List<string>();
-            using (var db = new DataContext(connString))
+            try
             {
-                using (var reader = db.ListTables(dbName))
+                string connString = dbConnConfig.ConnectionString;
+
+                List<string> retVal = new List<string>();
+                using (var db = new DataContext(connString))
                 {
-                    while (reader.Read())
+                    using (var reader = db.ListTables(dbName))
                     {
-                        retVal.Add(reader.GetString(0));
+                        while (reader.Read())
+                        {
+                            retVal.Add(reader.GetString(0));
+                        }
                     }
                 }
-            }
 
-            return retVal;
+                return new ListTablesResult()
+                {
+                    TableList = retVal
+                };
+            }
+            catch (Exception e)
+            {
+                return new ListTablesResult()
+                {
+                    Error = e.Message
+                };
+            }
         }
     }
 }

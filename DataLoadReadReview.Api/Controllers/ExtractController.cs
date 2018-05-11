@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using DataLoadReadReview.Api.Configs;
 using DataLoadReadReview.Api.Models;
 using DataLoadReadReview.Library;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -29,7 +26,6 @@ namespace DataLoadReadReview.Api.Controllers
             string connString = dbConnConfig.ConnectionString;
 
             List<string> retVal = new List<string>();
-            string selfLink = "", mediaLink = "", err = "";
             try
             {
                 using (DataContext db = new DataContext(connString))
@@ -42,22 +38,31 @@ namespace DataLoadReadReview.Api.Controllers
 
                         if (result != null)
                         {
-                            selfLink = result.SelfLink;
-                            mediaLink = result.MediaLink;
+                            return new ExtractResult()
+                            {
+                                SelfLink = result.SelfLink,
+                                MediaLink = result.MediaLink
+                            };
                         }
+                        else
+                        {
+                            return new ExtractResult()
+                            {
+                                Error = "Data not found!"
+                            };
+                        }
+
+                        
                     }
                 }
             }
             catch (Exception e)
             {
-                err = e.Message;
+                return new ExtractResult()
+                {
+                    Error = e.Message
+                };
             }
-
-            return new ExtractResult() {
-                SelfLink = selfLink,
-                MediaLink = mediaLink,
-                Error = err
-            };
         }
     }
 }
