@@ -54,7 +54,8 @@ namespace DataLoadReadReview.Web.Controllers
         [HttpGet("[action]")]
         public DBListResult SchemaList()
         {
-            try { 
+            try
+            {
                 string connString = dbConnConfig.ConnectionString;
 
                 List<string> retVal = new List<string>();

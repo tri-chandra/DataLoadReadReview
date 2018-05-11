@@ -41,14 +41,16 @@ namespace DataLoadReadReview.Api.Controllers
                             return new ExtractResult()
                             {
                                 SelfLink = result.SelfLink,
-                                MediaLink = result.MediaLink
+                                MediaLink = result.MediaLink,
+                                Status = "200"
                             };
                         }
                         else
                         {
                             return new ExtractResult()
                             {
-                                Error = "Data not found!"
+                                Error = "Data not found!",
+                                Status = "404"
                             };
                         }
 
@@ -60,7 +62,8 @@ namespace DataLoadReadReview.Api.Controllers
             {
                 return new ExtractResult()
                 {
-                    Error = e.Message
+                    Error = e.Message,
+                    Status = "500"
                 };
             }
         }

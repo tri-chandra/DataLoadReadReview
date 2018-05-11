@@ -22,17 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="Auth\conn-string.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="ClientApp\components\DBList.tsx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Auth\conn-string.json">
-      <Generator>MSDataSetGenerator</Generator>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
