@@ -58,19 +58,11 @@ namespace DataLoadReadReview.Library
             }
         }
 
-        public static Google.Apis.Storage.v1.Data.Object WriteToGCS(string filename)
+        public static Google.Apis.Storage.v1.Data.Object WriteToGCS(StorageClient storageClient, string bucketName, string filename)
         {
-            var credentialsPath = "auth\\gd-hiring.json";
-            var credentialsJson = File.ReadAllText(credentialsPath);
-            var googleCredential = GoogleCredential.FromJson(credentialsJson);
-            var storageClient = StorageClient.Create(googleCredential);
-            storageClient.Service.HttpClient.Timeout = new TimeSpan(1, 0, 0);
-
             var fileInfo = new FileInfo(filename);
 
             var fileStream = fileInfo.OpenRead();
-
-            var bucketName = "gd-hiring-tri";
 
             var result = storageClient.UploadObject(
                 bucketName,
@@ -83,6 +75,19 @@ namespace DataLoadReadReview.Library
             fileStream.Dispose();
 
             return result;
+        }
+        public static Google.Apis.Storage.v1.Data.Object WriteToGCS(string filename)
+        {
+            
+            var credentialsPath = "auth\\gd-hiring.json";
+            var credentialsJson = File.ReadAllText(credentialsPath);
+            var googleCredential = GoogleCredential.FromJson(credentialsJson);
+            var storageClient = StorageClient.Create(googleCredential);
+            storageClient.Service.HttpClient.Timeout = new TimeSpan(1, 0, 0);
+
+            var bucketName = "gd-hiring-tri";
+
+            return WriteToGCS(storageClient, bucketName, filename);
         }
     }
 }

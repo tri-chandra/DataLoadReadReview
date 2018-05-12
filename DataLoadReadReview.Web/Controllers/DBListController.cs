@@ -90,6 +90,16 @@ namespace DataLoadReadReview.Web.Controllers
         {
             string connString = dbConnConfig.ConnectionString;
 
+            #region Setup google StorageClient
+            var credentialsPath = "auth\\gd-hiring.json";
+            var credentialsJson = System.IO.File.ReadAllText(credentialsPath);
+            var googleCredential = GoogleCredential.FromJson(credentialsJson);
+            var storageClient = StorageClient.Create(googleCredential);
+            storageClient.Service.HttpClient.Timeout = new TimeSpan(1, 0, 0);
+
+            string bucketName = "gd-hiring-tri";
+            #endregion
+
             try
             {
                 using (DataContext db = new DataContext(connString))
@@ -100,7 +110,7 @@ namespace DataLoadReadReview.Web.Controllers
                         DBWriter.WriteToFile(reader, filename);
                         return new UploadResult()
                         {
-                            Payload = DBWriter.WriteToGCS(filename)
+                            Payload = DBWriter.WriteToGCS(storageClient, bucketName, filename)
                         };
                     }
                 }

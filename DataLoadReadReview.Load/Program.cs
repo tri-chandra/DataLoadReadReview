@@ -60,22 +60,22 @@ namespace DataLoadReadReview.Load
                             string filename = string.Format("{0}.{1}_{2:yyyy-MM-dd}.tsv", dbName, tableName, DateTime.Now);
 
                             #region DB -> stream -> GCS
-                            Console.WriteLine("Start streaming...");
-                            //StreamUploader.StreamSqlToGCS(reader, storageClient, filename, bucketName);
-                            Task.Run(async () =>
-                            {
-                                await StreamUploader.StreamSqlToGCS(reader, storageClient, filename, bucketName);
-                            })
-                            .GetAwaiter()
-                            .GetResult();
-                            Console.WriteLine("Streaming done.");
+                            //Console.WriteLine("Start streaming...");
+                            ////StreamUploader.StreamSqlToGCS(reader, storageClient, filename, bucketName);
+                            //Task.Run(async () =>
+                            //{
+                            //    await StreamUploader.StreamSqlToGCS(reader, storageClient, filename, bucketName);
+                            //})
+                            //.GetAwaiter()
+                            //.GetResult();
+                            //Console.WriteLine("Streaming done.");
                             #endregion
 
                             #region DB -> file -> GCS
-                            //Console.WriteLine("Reading DB...");
-                            //DBWriter.WriteToFile(reader, filename);
-                            //Console.WriteLine("Uploading TSV...");
-                            //DBWriter.WriteToGCS(filename);
+                            Console.WriteLine("Reading DB...");
+                            DBWriter.WriteToFile(reader, filename);
+                            Console.WriteLine("Uploading TSV...");
+                            DBWriter.WriteToGCS(storageClient, bucketName, filename);
                             #endregion
                         }
                     }

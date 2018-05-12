@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using DataLoadReadReview.Api.Configs;
 using DataLoadReadReview.Api.Models;
 using DataLoadReadReview.Library;
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -25,6 +27,16 @@ namespace DataLoadReadReview.Api.Controllers
         {
             string connString = dbConnConfig.ConnectionString;
 
+            #region Setup google StorageClient
+            var credentialsPath = "auth\\gd-hiring.json";
+            var credentialsJson = System.IO.File.ReadAllText(credentialsPath);
+            var googleCredential = GoogleCredential.FromJson(credentialsJson);
+            var storageClient = StorageClient.Create(googleCredential);
+            storageClient.Service.HttpClient.Timeout = new TimeSpan(1, 0, 0);
+
+            string bucketName = "gd-hiring-tri";
+            #endregion
+
             List<string> retVal = new List<string>();
             try
             {
@@ -34,7 +46,7 @@ namespace DataLoadReadReview.Api.Controllers
                     {
                         string filename = string.Format("{0}.{1}_{2:yyyy-MM-dd}.tsv", dbName, tableName, DateTime.Now);
                         DBWriter.WriteToFile(reader, filename);
-                        var result = DBWriter.WriteToGCS(filename);
+                        var result = DBWriter.WriteToGCS(storageClient, bucketName, filename);
 
                         if (result != null)
                         {
