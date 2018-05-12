@@ -6,87 +6,97 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DataLoadReadReview.Library
 {
-    class StreamUploader
+    public class StreamUploader
     {
+        private static NpgsqlConnection Connection;
+
         private static void WriteStringToStream(Stream stream, string payload)
         {
             var bytes = Encoding.ASCII.GetBytes(payload);
-            stream.Write(bytes, 0, bytes.Length);
+            stream.WriteAsync(bytes, 0, bytes.Length);
+            //stream.Flush();
         }
-        private static NpgsqlConnection Connection;
 
-        public async static void StreamSqlToGCS(NpgsqlDataReader reader, StorageClient storageClient, string filename, string bucketName)
+        public async static Task StreamSqlToGCS(NpgsqlDataReader reader, StorageClient storageClient, string filename, string bucketName)
         {
-            MemoryStream ms = new MemoryStream();
-
-            new Thread(() => {
-                var columns = reader.GetColumnSchema();
-                for (int i = 0; i < columns.Count; i++)
+            using (MemoryStream ms = new MemoryStream())
+            {
+                new Thread(() =>
                 {
-                    if (i == 0)
-                    {
-                        Console.Write(columns[i].ColumnName);
-                        WriteStringToStream(ms, columns[i].ColumnName);
-                    }
-                    else
-                    {
-                        Console.Write("\t{0}", columns[i].ColumnName);
-                        WriteStringToStream(ms, string.Format("\t{0}", columns[i].ColumnName));
-                    }
-
-                }
-                Console.WriteLine();
-                WriteStringToStream(ms, "\n");
-
-                while (reader.Read())
-                {
+                    Console.WriteLine("Start reading DB.");
+                    var columns = reader.GetColumnSchema();
                     for (int i = 0; i < columns.Count; i++)
                     {
-                        Type type = reader.GetFieldType(i);
-                        var method = reader.GetType().GetMethod("GetFieldValue", new Type[] { typeof(int) });
-                        var genericMethod = method.MakeGenericMethod(type);
-                        var value = genericMethod.Invoke(reader, new object[] { i });
-
-                        string valueHolder = "NULL";
-                        if (value != null) valueHolder = value.ToString();
                         if (i == 0)
                         {
-                            Console.Write(valueHolder);
-                            WriteStringToStream(ms, valueHolder);
+                            //Console.Write(columns[i].ColumnName);
+                            WriteStringToStream(ms, columns[i].ColumnName);
                         }
                         else
                         {
-                            Console.Write("\t{0}", valueHolder);
-                            WriteStringToStream(ms, string.Format("\t{0}", valueHolder));
+                            //Console.Write("\t{0}", columns[i].ColumnName);
+                            WriteStringToStream(ms, string.Format("\t{0}", columns[i].ColumnName));
                         }
+
                     }
-                    Console.WriteLine();
+                    //Console.WriteLine();
                     WriteStringToStream(ms, "\n");
-                    //Thread.Sleep(200);
+
+                    while (reader.Read())
+                    {
+                        for (int i = 0; i < columns.Count; i++)
+                        {
+                            Type type = reader.GetFieldType(i);
+                            var method = reader.GetType().GetMethod("GetFieldValue", new Type[] { typeof(int) });
+                            var genericMethod = method.MakeGenericMethod(type);
+                            var value = genericMethod.Invoke(reader, new object[] { i });
+
+                            string valueHolder = "NULL";
+                            if (value != null) valueHolder = value.ToString();
+                            if (i == 0)
+                            {
+                                //Console.Write(valueHolder);
+                                WriteStringToStream(ms, valueHolder);
+                            }
+                            else
+                            {
+                                //Console.Write("\t{0}", valueHolder);
+                                WriteStringToStream(ms, string.Format("\t{0}", valueHolder));
+                            }
+                        }
+                        //Console.WriteLine();
+                        WriteStringToStream(ms, "\n");
+                        //Thread.Sleep(200);
+                    }
+
+                    Console.WriteLine("Finished reading DB.");
+                }).Start();
+
+                Thread.Sleep(5000);
+
+                await storageClient.UploadObjectAsync(
+                    bucketName,
+                    filename,
+                    "text/html",
+                    ms
+                );
+
+                //Thread.Sleep(5000);
+
+                using (var outputFile = File.OpenWrite("out-" + filename))
+                {
+                    await storageClient.DownloadObjectAsync(bucketName, filename, outputFile);
                 }
-            }).Start();
-            
-            await storageClient.UploadObjectAsync(
-                bucketName,
-                filename,
-                "text/html",
-                ms
-            );
-
-            //Thread.Sleep(5000);
-
-            using (var outputFile = File.OpenWrite("temp-output.tsv"))
-            {
-                storageClient.DownloadObject(bucketName, filename, outputFile);
             }
 
-            Console.WriteLine("Done??");
+            Console.WriteLine("File uploaded.");
         }
 
-        public async static void StreamToGCS()
+        public async static Task StreamToGCS()
         {
             //Task.Run(async () => { await test(); }).GetAwaiter().GetResult();
             string connectionString = "Host=localhost;Port=5701;Database=hiring;Username=tri;Password=1hEWZ4GeN24c";

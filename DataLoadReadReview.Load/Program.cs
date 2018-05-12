@@ -3,6 +3,9 @@ using System.IO;
 using Newtonsoft.Json;
 using DataLoadReadReview.Library;
 using Newtonsoft.Json.Linq;
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
+using System.Threading.Tasks;
 
 namespace DataLoadReadReview.Load
 {
@@ -12,6 +15,7 @@ namespace DataLoadReadReview.Load
         {
             if (args.Length > 0)
             {
+                #region Setup SQL connection
                 string connectionString = "";
 
                 using (StreamReader configReader = new StreamReader("Auth/conn-string.json"))
@@ -20,7 +24,19 @@ namespace DataLoadReadReview.Load
                     var config = JsonConvert.DeserializeObject<JObject>(json);
                     connectionString = config.GetValue("value").ToString();
                 }
+                #endregion
 
+                #region Setup google StorageClient
+                var credentialsPath = "auth\\gd-hiring.json";
+                var credentialsJson = File.ReadAllText(credentialsPath);
+                var googleCredential = GoogleCredential.FromJson(credentialsJson);
+                var storageClient = StorageClient.Create(googleCredential);
+                storageClient.Service.HttpClient.Timeout = new TimeSpan(1, 0, 0);
+
+                string bucketName = "gd-hiring-tri";
+                #endregion
+
+                #region Input processing
                 string[] arguments = args[0].Split('.');
                 string dbName = "public";
                 string tableName = "";
@@ -33,6 +49,7 @@ namespace DataLoadReadReview.Load
                     dbName = arguments[0];
                     tableName = arguments[1];
                 }
+                #endregion
 
                 try
                 {
@@ -41,10 +58,25 @@ namespace DataLoadReadReview.Load
                         using (var reader = db.ReadTable(dbName, tableName))
                         {
                             string filename = string.Format("{0}.{1}_{2:yyyy-MM-dd}.tsv", dbName, tableName, DateTime.Now);
-                            Console.WriteLine("Reading DB...");
-                            DBWriter.WriteToFile(reader, filename);
-                            Console.WriteLine("Uploading TSV...");
-                            DBWriter.WriteToGCS(filename);
+
+                            #region DB -> stream -> GCS
+                            Console.WriteLine("Start streaming...");
+                            //StreamUploader.StreamSqlToGCS(reader, storageClient, filename, bucketName);
+                            Task.Run(async () =>
+                            {
+                                await StreamUploader.StreamSqlToGCS(reader, storageClient, filename, bucketName);
+                            })
+                            .GetAwaiter()
+                            .GetResult();
+                            Console.WriteLine("Streaming done.");
+                            #endregion
+
+                            #region DB -> file -> GCS
+                            //Console.WriteLine("Reading DB...");
+                            //DBWriter.WriteToFile(reader, filename);
+                            //Console.WriteLine("Uploading TSV...");
+                            //DBWriter.WriteToGCS(filename);
+                            #endregion
                         }
                     }
                 }
@@ -61,7 +93,7 @@ namespace DataLoadReadReview.Load
 ");
             }
 
-            Console.WriteLine("Woot, all done!");
+            Console.WriteLine("Execution finished!");
             Console.ReadLine();
         }
     }
